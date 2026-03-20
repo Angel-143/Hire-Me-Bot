@@ -1,25 +1,16 @@
 // ============================================================
-//  HIRE ME BOT — Vercel Serverless Function (FREE Backend)
-//  File location: api/chat.js
-//
-//  FREE TIER: Vercel gives 100GB bandwidth + 100,000 function
-//  invocations/month — more than enough for a portfolio!
-//
-//  HOW TO DEPLOY (5 minutes):
-//  1. vercel-backend/ folder ko GitHub pe upload karo
-//  2. vercel.com pe "Import Project" karo
-//  3. Environment variable add karo: GEMINI_API_KEY = your key
-//  4. Deploy! URL copy karo → index.html mein paste karo
+//  Hire Me Bot — Vercel Serverless Function
+//  CommonJS format (module.exports) — most compatible
 // ============================================================
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
 
-  // ── CORS — allows your portfolio site to call this ──
-  res.setHeader('Access-Control-Allow-Origin', '*');          // Change to your domain for security
+  // ── CORS Headers ──
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // ── Handle browser preflight ──
+  // ── Preflight ──
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -35,8 +26,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'messages array required' });
     }
 
-    // ── Build prompt for Gemini ──
-    // Gemini does not have a "system" role — prepend it to first user message
+    // ── Build Gemini messages (system ko first user message mein prepend karo) ──
     const geminiMessages = messages.map((msg, i) => {
       if (i === 0 && system) {
         return {
@@ -50,9 +40,9 @@ export default async function handler(req, res) {
       };
     });
 
-    // ── Call Gemini Flash-Lite (fastest + highest free quota: 1000 req/day) ──
+    // ── Gemini API Call ──
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -74,7 +64,6 @@ export default async function handler(req, res) {
 
     const data = await geminiRes.json();
 
-    // ── Extract reply text ──
     const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text
       || "Sorry, I couldn't generate a response right now.";
 
@@ -84,4 +73,4 @@ export default async function handler(req, res) {
     console.error('Server error:', err);
     return res.status(500).json({ error: 'Internal server error', message: err.message });
   }
-}
+};
